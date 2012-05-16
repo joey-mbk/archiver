@@ -40,13 +40,13 @@ int main (int argc, char * argv[])
     char * filePath = argv[optind];
     if ((file = fopen(filePath, "r")) < 0) perror("Erreur lors de l'ouverture du fichier");
     FILE * newFile;
-    char * newFilePath;
+    char * newFilePath = malloc(strlen(filePath)-1);
     strncpy(newFilePath, filePath, (strlen(filePath)-2));
     if ((newFile = fopen(newFilePath, "w+")) < 0) perror("Erreur lors de la creation du fichier");
     int line;
     char mode;
     int nbLine;
-    copy_to_next_marker(file, newFile);
+    copy_to_next_marker(file, newFile, 0);
     do
     {
         fscanf(file, "%i", &line);
@@ -55,13 +55,14 @@ int main (int argc, char * argv[])
         fgetc(file);
         freopen(newFilePath, "r+", newFile);
     } 
-    while (edit_file(file, newFile, line, mode, nbLine, newFilePath) < index);
+    while (edit_file(file, newFile, line, mode, nbLine, newFilePath) <= index);
     fclose(file);
     fclose(newFile);
+    free(newFilePath);
     return 0;
 }
 
-int copy_to_next_marker(FILE * file, FILE * newFile) {
+int copy_to_next_marker(FILE * file, FILE * newFile, int deleteMode) {
     char * marker = ("=--=--=--=--=--=--=--=--=--=#");
     char nextString[30] = "\0";
     int i;
@@ -69,7 +70,7 @@ int copy_to_next_marker(FILE * file, FILE * newFile) {
         fputs(nextString, newFile);
         fgets(nextString, 30, file);
     } 
-    while (strcmp(nextString, marker));
+    while (strcmp(nextString, marker) );
     fscanf(file, "%i", &i);
     fscanf(file, "%*c");
     return i;
@@ -84,24 +85,35 @@ int edit_file(FILE * oldFile, FILE * newFile, int line, char mode, int nbLine, c
     FILE * tmp = fopen(name, "w+");
     int  c;
     int i;
-    int l;
-    switch (mode) {
-        case 'a':
-            l = 0;
-            break;
-        case 'c':
-            l = 1;
-            break;
-        default:
-            break;
-    }
+    int l = 1;
     rewind(newFile);
     while (l < line) {
         c = fgetc(newFile);
         if (c == '\n') l++;
         fputc(c, tmp);
     }
-    i = copy_to_next_marker(oldFile, tmp);
+    switch (mode) {
+        case 'a':
+            do {
+                c = fgetc(newFile);
+                fputc(c, tmp);
+            } while (c != '\n');
+            i = copy_to_next_marker(oldFile, tmp, 0);
+            break;
+        case 'c':
+            do {
+                c = fgetc(newFile);
+            } while (c != '\n');
+            i = copy_to_next_marker(oldFile, tmp, 0);
+            break;
+        case 'd':
+            do {
+                c = fgetc(newFile);
+            } while (c != '\n');
+            i = copy_to_next_marker(oldFile, tmp, 1);
+        default:
+            break;
+    }
     do {
         c = fgetc(newFile);
         fputc(c, tmp);
