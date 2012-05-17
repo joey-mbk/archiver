@@ -16,6 +16,8 @@
 #include <errno.h>
 #include "extract.h"
 
+char * MARKER = "=--=--=--=--=--=--=--=--=--=#";
+
 int main (int argc, char * argv[])
 {
     int opt;
@@ -43,44 +45,32 @@ int main (int argc, char * argv[])
     char * newFilePath = malloc(strlen(filePath)-1);
     strncpy(newFilePath, filePath, (strlen(filePath)-2));
     if ((newFile = fopen(newFilePath, "w+")) < 0) perror("Erreur lors de la creation du fichier");
-    int line;
-    char mode;
-    int nbLine;
-    copy_to_next_marker(file, newFile, 0);
-    do
-    {
-        fscanf(file, "%i", &line);
-        fscanf(file, "%c", &mode);
-        fscanf(file, "%i", &nbLine);
-        fgetc(file);
-        freopen(newFilePath, "r+", newFile);
-    } 
-    while (edit_file(file, newFile, line, mode, nbLine, newFilePath) <= index);
+    int current = 0;
+    while (current < 0) {
+        go_to_next_marker(file, newFile, 0);
+    }
+    go_to_next_marker(file, newFile, 1);
     fclose(file);
     fclose(newFile);
     free(newFilePath);
     return 0;
 }
 
-int copy_to_next_marker(FILE * file, FILE * newFile, int deleteMode) {
-    char * marker = ("=--=--=--=--=--=--=--=--=--=#");
-    char nextString[30] = "\0";
-    int i;
+void go_to_next_marker(FILE * file, FILE * newFile, int copyMode) {
+    char * nextLine = '\0';
+    size_t * lenghtLine;
     do {
-        fputs(nextString, newFile);
-        fgets(nextString, 30, file);
+        nextLine = fgetln(file, lenghtLine);
+       
     } 
-    while (strcmp(nextString, marker) );
-    fscanf(file, "%i", &i);
-    fscanf(file, "%*c");
-    return i;
+    while (strncmp(nextLine, marker, strlen(marker)) );
 }
 
 void replace_line(FILE * file, int i, char * newLine) {
     
 }
 
-int edit_file(FILE * oldFile, FILE * newFile, int line, char mode, int nbLine, char * pathFile) {
+/*int edit_file(FILE * oldFile, FILE * newFile, int line, char mode, int nbLine, char * pathFile) {
     char * name = tmpnam(NULL);
     FILE * tmp = fopen(name, "w+");
     int  c;
@@ -98,19 +88,19 @@ int edit_file(FILE * oldFile, FILE * newFile, int line, char mode, int nbLine, c
                 c = fgetc(newFile);
                 fputc(c, tmp);
             } while (c != '\n');
-            i = copy_to_next_marker(oldFile, tmp, 0);
+            i = go_to_next_marker(oldFile);
             break;
         case 'c':
             do {
                 c = fgetc(newFile);
             } while (c != '\n');
-            i = copy_to_next_marker(oldFile, tmp, 0);
+            i = go_to_next_marker(oldFile);
             break;
         case 'd':
             do {
                 c = fgetc(newFile);
             } while (c != '\n');
-            i = copy_to_next_marker(oldFile, tmp, 1);
+            i = go_to_next_marker(oldFile);
         default:
             break;
     }
@@ -121,7 +111,7 @@ int edit_file(FILE * oldFile, FILE * newFile, int line, char mode, int nbLine, c
     rename(name, pathFile);
     fclose(tmp);
     return i;
-}
+}*/
 
 long int go_to_line(FILE * file, int i, fpos_t * pos) {
     rewind(file);
