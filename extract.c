@@ -14,6 +14,17 @@
 #include "extract.h"
 
 const char * MARKER = "=--=--=--=--=--=--=--=--=--=#";
+FILE * archive;
+FILE * extractFile;
+
+static void sig_handler(int signum) {
+	if (signum == SIGTERM || signum == SIGINT) {
+        fclose(archive);
+        fclose(extractFile);
+        exit(EXIT_SUCCESS);
+    }
+}
+
 
 int main (int argc, char * argv[])
 {
@@ -35,49 +46,53 @@ int main (int argc, char * argv[])
                 exit(EXIT_FAILURE);
         }
     }
-    FILE * file;
+    
+    if (signal(SIGINT, sig_handler) == SIG_ERR) {
+        perror("Erreur lors de l'enregistrement du signal");
+        exit(EXIT_FAILURE);
+    }
+    
+    if (signal(SIGTERM, sig_handler) == SIG_ERR) {
+        perror("Erreur lors de l'enregistrement du signal");
+        exit(EXIT_FAILURE);
+    }
+    
     char * filePath = argv[optind];
-    if ((file = fopen(filePath, "rb")) == NULL) {
+    if ((archive = fopen(filePath, "rb")) == NULL) {
         perror("Erreur lors de l'ouverture du fichier: ");
         printf("%s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
-    FILE * newFile;
-    char * newFilePath = malloc(strlen(filePath)-1);
+   
+    char * newFilePath = malloc(sizeof(char)*strlen(filePath)-1);
     strncpy(newFilePath, filePath, (strlen(filePath)-2));
-    if ((newFile = fopen(newFilePath, "wb+")) == NULL) { 
+    if ((extractFile = fopen(newFilePath, "wb+")) == NULL) { 
         perror("Erreur lors de la creation du fichier");
         printf("%s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
     int current = 0;
     while (current < index) {
-        go_to_next_marker(file, newFile, 0);
+        go_to_next_marker(archive, extractFile, 0);
         current++;
     }
-    go_to_next_marker(file, newFile, 1);
-    fclose(file);
-    fclose(newFile);
+    go_to_next_marker(archive, extractFile, 1);
+    fclose(archive);
+    fclose(extractFile);
     free(newFilePath);
     return EXIT_SUCCESS;
 }
 
 void go_to_next_marker(FILE * file, FILE * newFile, int copyMode) {
     char * nextLine = '\0';
-    size_t * lenghtLine = malloc(sizeof(size_t));
-    if (lenghtLine == NULL) { 
-        perror("Erreur malloc");
-        printf("%s\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
+    size_t lenghtLine;
     do {
-        nextLine = fgetln(file, lenghtLine);
+        nextLine = fgetln(file, &lenghtLine);
         if (copyMode && strncmp(nextLine, MARKER, strlen(MARKER))) {
-            fwrite(nextLine, sizeof(char), *lenghtLine, newFile);
+            fwrite(nextLine, sizeof(char), lenghtLine, newFile);
         }
     } 
     while (!feof(file) && strncmp(nextLine, MARKER, strlen(MARKER)));
-    free(lenghtLine);
 }
 
 /*int edit_file(FILE * oldFile, FILE * newFile, int line, char mode, int nbLine, char * pathFile) {
