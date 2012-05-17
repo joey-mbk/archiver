@@ -7,3 +7,4 @@
 
 static void sig_handler(int);
 void start();
+void record();
