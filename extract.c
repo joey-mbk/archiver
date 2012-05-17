@@ -9,21 +9,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <string.h>
 #include <errno.h>
 #include "extract.h"
 
-char * MARKER = "=--=--=--=--=--=--=--=--=--=#";
+const char * MARKER = "=--=--=--=--=--=--=--=--=--=#";
 
 int main (int argc, char * argv[])
 {
     int opt;
-    int index;
+    int index = 0;
     if (argc < 2) {
-        printf("Usage : -n indice filename" );
+        printf("Usage : ./extract [-n indice] filename" );
         exit(EXIT_FAILURE);
     }
     while ((opt = getopt(argc, argv, "n:")) != -1) {
@@ -32,7 +29,7 @@ int main (int argc, char * argv[])
                 index = atoi(optarg);
                 break;
             case '?':
-                printf("bad");
+                printf("Usage : ./extract [-n indice] filename");
                 return 1;
             default:
                 exit(EXIT_FAILURE);
@@ -40,34 +37,47 @@ int main (int argc, char * argv[])
     }
     FILE * file;
     char * filePath = argv[optind];
-    if ((file = fopen(filePath, "r")) < 0) perror("Erreur lors de l'ouverture du fichier");
+    if ((file = fopen(filePath, "rb")) == NULL) {
+        perror("Erreur lors de l'ouverture du fichier: ");
+        printf("%s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
     FILE * newFile;
     char * newFilePath = malloc(strlen(filePath)-1);
     strncpy(newFilePath, filePath, (strlen(filePath)-2));
-    if ((newFile = fopen(newFilePath, "w+")) < 0) perror("Erreur lors de la creation du fichier");
+    if ((newFile = fopen(newFilePath, "wb+")) == NULL) { 
+        perror("Erreur lors de la creation du fichier");
+        printf("%s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
     int current = 0;
-    while (current < 0) {
+    while (current < index) {
         go_to_next_marker(file, newFile, 0);
+        current++;
     }
     go_to_next_marker(file, newFile, 1);
     fclose(file);
     fclose(newFile);
     free(newFilePath);
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 void go_to_next_marker(FILE * file, FILE * newFile, int copyMode) {
     char * nextLine = '\0';
-    size_t * lenghtLine;
+    size_t * lenghtLine = malloc(sizeof(size_t));
+    if (lenghtLine == NULL) { 
+        perror("Erreur malloc");
+        printf("%s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
     do {
         nextLine = fgetln(file, lenghtLine);
-       
+        if (copyMode && strncmp(nextLine, MARKER, strlen(MARKER))) {
+            fwrite(nextLine, sizeof(char), *lenghtLine, newFile);
+        }
     } 
-    while (strncmp(nextLine, marker, strlen(marker)) );
-}
-
-void replace_line(FILE * file, int i, char * newLine) {
-    
+    while (!feof(file) && strncmp(nextLine, MARKER, strlen(MARKER)));
+    free(lenghtLine);
 }
 
 /*int edit_file(FILE * oldFile, FILE * newFile, int line, char mode, int nbLine, char * pathFile) {
@@ -112,12 +122,3 @@ void replace_line(FILE * file, int i, char * newLine) {
     fclose(tmp);
     return i;
 }*/
-
-long int go_to_line(FILE * file, int i, fpos_t * pos) {
-    rewind(file);
-    for(int a = 1; a < i; a++) {
-        fscanf(file, "%*[^\n]");
-    }
-    fscanf(file, "%*c");
-    return ftell(file);
-}
