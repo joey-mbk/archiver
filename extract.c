@@ -1,9 +1,8 @@
 //
-//  main.c
+//  extract.c
 //  SINF1252_P3
 //
-//  Created by Ludovic Vannoorenberghe on 15/05/12.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Authors: Joey Moubarak, Ludovic Vannoorenberghe
 //
 
 #include <stdio.h>
@@ -85,6 +84,7 @@ int main (int argc, char * argv[])
     semFile = sem_open("archaccess", O_CREAT, S_IRUSR | S_IWUSR, 1);
     if(semFile== SEM_FAILED) {
         perror("Erreur lors de l'initialisation du sémaphore");
+        exit(EXIT_FAILURE);
     }
 
     /* Find the marker and copy */
