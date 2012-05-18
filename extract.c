@@ -96,6 +96,10 @@ int main (int argc, char * argv[])
 void go_to_next_marker(FILE * file, FILE * newFile, int copyMode, char * filePath) {
     char * nextLine = '\0';
     size_t lenghtLine;
+    if(feof(file)){
+        printf("La version demandée ne se trouve pas dans l'archive");
+        exit(EXIT_FAILURE);
+    }
     do {
         nextLine = fgetln(file, &lenghtLine);
         if (copyMode && strncmp(nextLine, MARKER, strlen(MARKER))) {
