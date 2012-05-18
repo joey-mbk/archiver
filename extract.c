@@ -12,6 +12,9 @@
 #include <string.h>
 #include <errno.h>
 #include "extract.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 const char * MARKER = "=--=--=--=--=--=--=--=--=--=#";
 FILE * archive;
@@ -77,8 +80,14 @@ int main (int argc, char * argv[])
         current++;
     }
     go_to_next_marker(archive, extractFile, 1);
-    fclose(archive);
+    /* CLOSE*/
     fclose(extractFile);
+    fclose(archive);
+    /*DELETE LAST \n char*/
+    struct stat s;
+    stat(newFilePath, &s);
+    truncate(newFilePath, (s.st_size - sizeof(char)));
+    /*FREE*/
     free(newFilePath);
     return EXIT_SUCCESS;
 }
@@ -98,46 +107,3 @@ void go_to_next_marker(FILE * file, FILE * newFile, int copyMode) {
     } 
     while (!feof(file) && strncmp(nextLine, MARKER, strlen(MARKER)));
 }
-
-/*int edit_file(FILE * oldFile, FILE * newFile, int line, char mode, int nbLine, char * pathFile) {
-    char * name = tmpnam(NULL);
-    FILE * tmp = fopen(name, "w+");
-    int  c;
-    int i;
-    int l = 1;
-    rewind(newFile);
-    while (l < line) {
-        c = fgetc(newFile);
-        if (c == '\n') l++;
-        fputc(c, tmp);
-    }
-    switch (mode) {
-        case 'a':
-            do {
-                c = fgetc(newFile);
-                fputc(c, tmp);
-            } while (c != '\n');
-            i = go_to_next_marker(oldFile);
-            break;
-        case 'c':
-            do {
-                c = fgetc(newFile);
-            } while (c != '\n');
-            i = go_to_next_marker(oldFile);
-            break;
-        case 'd':
-            do {
-                c = fgetc(newFile);
-            } while (c != '\n');
-            i = go_to_next_marker(oldFile);
-        default:
-            break;
-    }
-    do {
-        c = fgetc(newFile);
-        fputc(c, tmp);
-    } while (c != EOF);
-    rename(name, pathFile);
-    fclose(tmp);
-    return i;
-}*/
