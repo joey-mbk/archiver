@@ -2,13 +2,13 @@
 //  extract.h
 //  SINF1252_P3
 //
-//  Created by Ludovic Vannoorenberghe on 15/05/12.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+// 
+//  Authors: Joey Moubarak, Ludovic Vannoorenberghe
 //
 
 #ifndef SINF1252_P3_extract_h
 #define SINF1252_P3_extract_h
 
-void go_to_next_marker(FILE * file, FILE * newFile, int copyMode);
+void go_to_next_marker(FILE * file, FILE * newFile, int copyMode, char * filePath);
 int edit_file(FILE * oldFile, FILE * newFile, int line, char mode, int nbLine, char * pathFile);
 #endif
